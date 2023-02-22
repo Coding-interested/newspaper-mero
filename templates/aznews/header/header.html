@@ -22,15 +22,21 @@
                             </div>
                             <div class="header-info-right">
                                 <ul class="header-social">
-                                    <li>
-                                        <a href="#"><i class="fab fa-twitter"></i></a>
-                                    </li>
-                                    <li>
-                                        <a href="#"><i class="fab fa-instagram"></i></a>
-                                    </li>
-                                    <li>
-                                        <a href="#"><i class="fab fa-pinterest-p"></i></a>
-                                    </li>
+                                    {% if user.is_authenticated %}
+                                        <li>
+                                            <a href="#"><i class="fas fa-plus"></i></a>
+                                        </li>
+ 
+                                        <li>
+                                            <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i></a>
+ 
+                                        </li>
+                                    {% else %}
+                                        <li>
+                                            <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i></a>
+                                        </li>
+                                    {% endif %}
+ 
                                 </ul>
                             </div>
                         </div>
@@ -91,9 +97,9 @@
                                             <a href="#">Categories</a>
                                             <ul class="submenu">
                                                 {% for category in categories %}
-                                                <li>
-                                                    <a href="{% url 'post-by-category' category.pk %}">{{ category.name|title }}</a>
-                                                </li>
+                                                    <li>
+                                                        <a href="{% url 'post-by-category' category.pk %}">{{ category.name|title }}</a>
+                                                    </li>
                                                 {% endfor %}
                                             </ul>
                                         </li>
@@ -101,9 +107,9 @@
                                             <a href="#">Tags</a>
                                             <ul class="submenu">
                                                 {% for tag in tags %}
-                                                <li>
-                                                    <a href="{% url 'post-by-tag' tag.pk %}">{{ tag.name|title }}</a>
-                                                </li>
+                                                    <li>
+                                                        <a href="{% url 'post-by-tag' tag.pk %}">{{ tag.name|title }}</a>
+                                                    </li>
                                                 {% endfor %}
                                             </ul>
                                         </li>
