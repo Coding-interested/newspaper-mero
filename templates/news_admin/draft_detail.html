@@ -59,7 +59,7 @@
       <a href="{% url 'post-update' post.pk %}" class="btn btn-success">Update</a>
     {% endif %}
  
-    <p>{{ post.content }}</p>
+    <p>{{ post.content|safe }}</p>
   </div>
 
 

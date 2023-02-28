@@ -1,17 +1,28 @@
-from django.shortcuts import render, redirect
+from datetime import timedelta
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  TemplateView, UpdateView, View)
+
+from newspaper_app.forms import CommentForm, ContactForm, NewsletterForm, PostForm, TagForm, CategoryForm
+from newspaper_app.models import Category, Post, Tag
 
 # Create your views here.
 
-from django.views.generic import ListView, DetailView, TemplateView, View
-from newspaper_app.models import Post, Category
-from django.utils import timezone
-from datetime import timedelta
-from django.db.models import Q
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 
-from django.http import JsonResponse
-from newspaper_app.forms import ContactForm, NewsletterForm, CommentForm
-from django.contrib import messages
+
+
+
+
+   
+
 
 
 class HomeView(ListView):
@@ -51,10 +62,20 @@ class PostDetailView(DetailView):
     template_name = "aznews/detail.html"
     context_object_name = "post"
 
+    def get_queryset(self):
+        qs = super().get_queryset()  # qs is var. name i.e. userdefined
+        return qs.filter(status = "active", published_at__isnull = False)
+
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
+
+
         #  get current post
         obj = self.get_object()
+        obj.views_count += 1
+        obj.save()
+
+
         #  id => 3
         #  2, 1
 
@@ -236,3 +257,153 @@ class CommentView(View):
                 self.template_name,
                 {"post": post, "form": form}
             )
+        
+
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+
+# Create your views here.
+
+
+# ya bata tala naya
+
+
+
+# Model => views => URLs => templates
+
+# class-based views
+
+
+
+
+
+
+
+
+class DraftListView(LoginRequiredMixin, ListView):
+    model = Post
+    template_name = "news_admin/draft_list.html"
+    context_object_name = "posts"
+    queryset = Post.objects.filter(published_at__isnull=True).order_by("-published_at")
+
+
+
+
+
+class PostDeleteView(LoginRequiredMixin, DeleteView):
+    model = Post
+    success_url = reverse_lazy("draft-list")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Post was successfully deleted")
+        return super().form_valid(form)
+
+
+
+
+
+class PostCreateView(LoginRequiredMixin, CreateView):
+    model = Post
+    form_class = PostForm
+    template_name = "news_admin/post_create.html"
+    success_url = reverse_lazy("draft-list")
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        messages.success(self.request, "Post was successfully created")
+        return super().form_valid(form)
+
+
+
+
+
+class PostPublishView(LoginRequiredMixin, View):
+    def get(self, request, pk, *args, **kwargs):
+        # post = Post.objects.get(pk=pk)
+        post = get_object_or_404(Post, pk=pk)
+        post.published_at = timezone.now()
+        post.save()
+        messages.success(request, "Post was successfully published")
+        return redirect("post-detail", post.pk)
+
+
+
+
+
+class PostUpdateView(LoginRequiredMixin, UpdateView):
+    model = Post
+    form_class = PostForm
+    template_name = "news_admin/post_create.html"
+    success_url = reverse_lazy("post-list")
+
+class DraftDetailView(LoginRequiredMixin, DeleteView):
+    model = Post
+    template_name = "news_admin/draft_detail.html"
+    context_object_name = "post"
+
+
+############### Tag CRUD ##############
+
+
+
+class TagListView(LoginRequiredMixin, ListView):
+    model = Tag
+    template_name = "news_admin/tag_list.html"
+    context_object_name = "tags"
+
+class TagCreateView(LoginRequiredMixin, CreateView):
+    model = Tag
+    form_class = TagForm
+    template_name = "news_admin/tag_create.html"
+    success_url = reverse_lazy("tag-list")
+    
+class TagUpdateView(LoginRequiredMixin, UpdateView):
+    model = Tag
+    form_class = TagForm
+    template_name = "news_admin/tag_create.html"
+    success_url = reverse_lazy("tag-list")
+
+    
+class TagDeleteView(LoginRequiredMixin, View):
+
+    def get(self, request, pk, *args, **kwargs):
+        tag = get_object_or_404(Tag, pk=pk)
+        tag.delete()
+        messages.success(self.request, "Tag was successfully deleted")
+        return redirect('tag-list')
+    
+
+
+############### Category CRUD ##############
+
+
+
+class CategoryListView(LoginRequiredMixin, ListView):
+    model = Category
+    template_name = "news_admin/category_list.html"
+    context_object_name = "categories"
+
+class CategoryCreateView(LoginRequiredMixin, CreateView):
+    model = Category
+    form_class = CategoryForm
+    template_name = "news_admin/category_create.html"
+    success_url = reverse_lazy("category-list")
+    
+class CategoryUpdateView(LoginRequiredMixin, UpdateView):
+    model = Category
+    form_class = CategoryForm
+    template_name = "news_admin/category_create.html"
+    success_url = reverse_lazy("category-list")
+
+    
+class CategoryDeleteView(LoginRequiredMixin, View):
+
+    def get(self, request, pk, *args, **kwargs):
+        category = get_object_or_404(Category, pk=pk)
+        category.delete()
+        messages.success(self.request, "Category was successfully deleted")
+        return redirect('category-list')
+
+
+def handler404(request, exception, template_name="404.html"):
+    return render(request, template_name, status=404)
